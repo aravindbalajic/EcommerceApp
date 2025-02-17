@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Avatar, Card, Title, Text, List, Divider, Button } from 'react-native-paper';
+import { Avatar, Card, Title, Text, List, Divider, Button, TextInput, Portal, Dialog } from 'react-native-paper';
 
 // Mock user data (replace with real data later)
 const user = {
@@ -34,6 +34,21 @@ const orderHistory = [
 ];
 
 export default function ProfileScreen() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [userData, setUserData] = useState({
+    name: "John Doe",
+    email: "john@example.com",
+    phone: "+91 9876543210",
+    address: "123 Steel Street, Chennai, Tamil Nadu"
+  });
+
+  const [editData, setEditData] = useState({ ...userData });
+
+  const handleSave = () => {
+    setUserData(editData);
+    setIsEditing(false);
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* User Profile Card */}
@@ -41,36 +56,75 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           <Avatar.Text 
             size={80} 
-            label={user.name.split(' ').map(n => n[0]).join('')} 
+            label={userData.name.split(' ').map(n => n[0]).join('')} 
             style={styles.avatar}
           />
-          <Title style={styles.name}>{user.name}</Title>
+          <Title style={styles.name}>{userData.name}</Title>
         </View>
         <Card.Content>
           <List.Item
             title="Email"
-            description={user.email}
+            description={userData.email}
             left={props => <List.Icon {...props} icon="email" />}
           />
           <List.Item
             title="Phone"
-            description={user.phone}
+            description={userData.phone}
             left={props => <List.Icon {...props} icon="phone" />}
           />
           <List.Item
             title="Address"
-            description={user.address}
+            description={userData.address}
             left={props => <List.Icon {...props} icon="home" />}
           />
           <Button 
             mode="outlined" 
-            onPress={() => {/* Add edit profile handler */}}
+            onPress={() => setIsEditing(true)}
             style={styles.editButton}
           >
             Edit Profile
           </Button>
         </Card.Content>
       </Card>
+
+      {/* Edit Profile Dialog */}
+      <Portal>
+        <Dialog visible={isEditing} onDismiss={() => setIsEditing(false)}>
+          <Dialog.Title>Edit Profile</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Name"
+              value={editData.name}
+              onChangeText={(text) => setEditData({ ...editData, name: text })}
+              style={styles.input}
+            />
+            <TextInput
+              label="Email"
+              value={editData.email}
+              onChangeText={(text) => setEditData({ ...editData, email: text })}
+              style={styles.input}
+            />
+            <TextInput
+              label="Phone"
+              value={editData.phone}
+              onChangeText={(text) => setEditData({ ...editData, phone: text })}
+              style={styles.input}
+            />
+            <TextInput
+              label="Address"
+              value={editData.address}
+              onChangeText={(text) => setEditData({ ...editData, address: text })}
+              multiline
+              numberOfLines={3}
+              style={styles.input}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setIsEditing(false)}>Cancel</Button>
+            <Button onPress={handleSave}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       {/* Order History */}
       <Card style={styles.orderCard}>
@@ -163,5 +217,9 @@ const styles = StyleSheet.create({
   },
   status: {
     fontWeight: 'bold',
-  }
+  },
+  input: {
+    marginBottom: 12,
+    backgroundColor: 'transparent',
+  },
 }); 
