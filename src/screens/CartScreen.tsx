@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Image } from 'react-native';
 import { Card, Title, Paragraph, Button, Text, TextInput, Portal, Dialog, RadioButton } from 'react-native-paper';
 import { useCart } from '../context/CartContext';
+import { colors, typography, spacing, shadows, borders } from '../styles/theme';
 
 type PaymentMethod = 'card' | 'upi' | 'netbanking';
 
 export default function CartScreen() {
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, removeFromCart, clearCart, addOrder } = useCart();
   const [quantities, setQuantities] = useState<{ [key: number]: string }>(
     cartItems.reduce((acc, item) => ({ ...acc, [item.id!]: '1' }), {})
   );
   const [showCheckout, setShowCheckout] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  const [showQRCode, setShowQRCode] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
     name: '',
     email: '',
@@ -42,9 +44,38 @@ export default function CartScreen() {
   };
 
   const handlePayment = () => {
-    // Here you would integrate with a payment gateway
-    alert('Order placed successfully!');
+    if (paymentMethod === 'upi') {
+      setShowQRCode(true);
+      return;
+    }
+
+    // Create order from cart items
+    const order = {
+      id: `ORD${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+      items: cartItems.map(item => ({
+        name: item.name,
+        quantity: quantities[item.id!],
+        price: item.price
+      })),
+      total: total,
+      status: 'Processing' as const
+    };
+
+    // Add order to history
+    addOrder(order);
+    
+    // Clear cart
+    clearCart();
+    
+    // Reset quantities
+    setQuantities({});
+    
+    // Close checkout dialog
     setShowCheckout(false);
+    
+    // Show success message
+    alert('Order placed successfully!');
   };
 
   const renderPaymentFields = () => {
@@ -76,13 +107,17 @@ export default function CartScreen() {
         );
       case 'upi':
         return (
-          <TextInput
-            label="UPI ID"
-            value={paymentDetails.upiId}
-            onChangeText={(text) => setPaymentDetails({ ...paymentDetails, upiId: text })}
-            style={styles.input}
-            placeholder="example@upi"
-          />
+          <View style={styles.upiContainer}>
+            <Text style={styles.upiText}>Scan QR Code to pay ₹{total.toFixed(2)}</Text>
+            <Text style={styles.upiText}>UPI ID: arm.steel@okaxis</Text>
+            <Button
+              mode="contained"
+              onPress={() => setShowQRCode(true)}
+              style={styles.showQRButton}
+            >
+              Show QR Code
+            </Button>
+          </View>
         );
       case 'netbanking':
         return (
@@ -212,6 +247,30 @@ export default function CartScreen() {
             <Button mode="contained" onPress={handlePayment}>Pay Now</Button>
           </Dialog.Actions>
         </Dialog>
+
+        <Dialog visible={showQRCode} onDismiss={() => setShowQRCode(false)}>
+          <Dialog.Title>Scan QR Code</Dialog.Title>
+          <Dialog.Content>
+            <View style={styles.qrContainer}>
+              <Image
+                source={require('../assets/upi-qr.jpg')}
+                style={styles.qrCode}
+                resizeMode="contain"
+              />
+              <Text style={styles.qrText}>Amount: ₹{total.toFixed(2)}</Text>
+              <Text style={styles.qrText}>UPI ID: arm.steel@okaxis</Text>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => {
+              setShowQRCode(false);
+              setShowCheckout(false);
+              clearCart();
+              alert('Thank you for your payment! Your order has been placed.');
+            }}>Payment Complete</Button>
+            <Button onPress={() => setShowQRCode(false)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
@@ -284,5 +343,32 @@ const styles = StyleSheet.create({
   cardDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  upiContainer: {
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  upiText: {
+    ...typography.body,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  showQRButton: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  qrCode: {
+    width: 200,
+    height: 200,
+    marginBottom: spacing.md,
+  },
+  qrText: {
+    ...typography.body,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
   },
 }); 

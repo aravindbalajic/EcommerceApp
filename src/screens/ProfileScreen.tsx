@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar, Card, Title, Text, List, Divider, Button, TextInput, Portal, Dialog } from 'react-native-paper';
+import { useCart } from '../context/CartContext';
 
 // Mock user data (replace with real data later)
 const user = {
@@ -10,30 +11,8 @@ const user = {
   address: "123 Steel Street, Chennai, Tamil Nadu"
 };
 
-// Mock order history (replace with real data later)
-const orderHistory = [
-  {
-    id: "ORD001",
-    date: "2024-03-15",
-    items: [
-      { name: "Steel I-Beam", quantity: 2, price: "599.99" },
-      { name: "Steel Pipe", quantity: 3, price: "299.99" }
-    ],
-    total: 1799.95,
-    status: "Delivered"
-  },
-  {
-    id: "ORD002",
-    date: "2024-03-10",
-    items: [
-      { name: "Steel Sheet", quantity: 1, price: "199.99" }
-    ],
-    total: 199.99,
-    status: "Processing"
-  }
-];
-
 export default function ProfileScreen() {
+  const { orderHistory } = useCart();
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState({
     name: "John Doe",
@@ -130,35 +109,39 @@ export default function ProfileScreen() {
       <Card style={styles.orderCard}>
         <Card.Content>
           <Title>Order History</Title>
-          {orderHistory.map((order, index) => (
-            <View key={order.id}>
-              <List.Accordion
-                title={`Order #${order.id}`}
-                description={`Date: ${order.date}`}
-                left={props => <List.Icon {...props} icon="package" />}
-              >
-                <View style={styles.orderDetails}>
-                  {order.items.map((item, idx) => (
-                    <View key={idx} style={styles.orderItem}>
-                      <Text>{item.name} x{item.quantity}</Text>
-                      <Text>${item.price}</Text>
+          {orderHistory.length === 0 ? (
+            <Text style={styles.emptyOrderText}>No orders yet</Text>
+          ) : (
+            orderHistory.map((order, index) => (
+              <View key={order.id}>
+                <List.Accordion
+                  title={`Order #${order.id}`}
+                  description={`Date: ${order.date}`}
+                  left={props => <List.Icon {...props} icon="package" />}
+                >
+                  <View style={styles.orderDetails}>
+                    {order.items.map((item, idx) => (
+                      <View key={idx} style={styles.orderItem}>
+                        <Text>{item.name} x{item.quantity}</Text>
+                        <Text>₹{item.price}</Text>
+                      </View>
+                    ))}
+                    <Divider style={styles.divider} />
+                    <View style={styles.orderFooter}>
+                      <Text style={styles.total}>Total: ₹{order.total.toFixed(2)}</Text>
+                      <Text style={[
+                        styles.status,
+                        { color: order.status === 'Delivered' ? '#4CAF50' : '#FFC107' }
+                      ]}>
+                        {order.status}
+                      </Text>
                     </View>
-                  ))}
-                  <Divider style={styles.divider} />
-                  <View style={styles.orderFooter}>
-                    <Text style={styles.total}>Total: ${order.total}</Text>
-                    <Text style={[
-                      styles.status,
-                      { color: order.status === 'Delivered' ? '#4CAF50' : '#FFC107' }
-                    ]}>
-                      {order.status}
-                    </Text>
                   </View>
-                </View>
-              </List.Accordion>
-              {index < orderHistory.length - 1 && <Divider />}
-            </View>
-          ))}
+                </List.Accordion>
+                {index < orderHistory.length - 1 && <Divider />}
+              </View>
+            ))
+          )}
         </Card.Content>
       </Card>
     </ScrollView>
@@ -221,5 +204,10 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 12,
     backgroundColor: 'transparent',
+  },
+  emptyOrderText: {
+    textAlign: 'center',
+    marginVertical: 20,
+    color: '#666',
   },
 }); 
